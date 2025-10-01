@@ -25,6 +25,7 @@ import numpy as np
 import soundfile
 import torch
 import torch.nn.functional as F
+import re
 
 Pathlike = Union[str, Path]
 
@@ -363,3 +364,45 @@ def write_error_stats(
 
         print(f"{word}   {corr} {tot_errs} {ref_count} {hyp_count}", file=f)
     return float(tot_err_rate)
+
+HALLUCINATION_TEXTS = {
+        "ru": [
+            re.compile(r"DimaTorzok"),
+            re.compile(r"Игорь Негода"),
+            re.compile(r"Валерий Курас"),
+            re.compile(r"Валерий Савинский"),
+            re.compile(r"Фондю любит тебя"),
+            re.compile(r"ФактФронт"),
+            re.compile(r"не пропустить новые видео"),
+            re.compile(r"Корректор (А|В|Е)\."),
+            re.compile(r"[Пп]родолжение в следующей части"),
+            re.compile(r"[Рр]е(д)?актор субтитров"),
+            re.compile(r"Субтитры субтитров"),
+            re.compile(r"Корректор субтитров"),
+            re.compile(r"Спасибо за субтитры"),
+            re.compile(r"[Сс]убтитры (подготов|делал|сделаны)"),
+            re.compile(r"[Бб]лагодарю( (тебя|вас|всех))? за (внимание|просмотр)"),
+            re.compile(r"[Сс]пасибо( (тебе|вам|всем))? за (внимание|просмотр)"),
+            re.compile(r"[Пп](одписаться|одписывайся|одписывайтесь) на( (мой|наш|этот))? канал"),
+            re.compile(r"[Пп](одпишись|одпишитесь|одпишите) на( (мой|наш|этот))? канал"),
+            re.compile(r"[Дд]обро пожаловать (на|в)( (мой|наш|этот))? канал"),
+            re.compile(r"[Сс]тавь(те)? лайк(и)?"),
+            re.compile(r"[Жж]ми(те)? лайк(и)?"),
+            re.compile(r"[Пп]остав(ь|те|ить) лайк(и)?"),
+            re.compile(r"[Дд](л)?ай(те)? лайк(и)?"),
+            re.compile(r"Найдите лайки"),
+            re.compile(r"Я не могу это сделать"),
+            # exclude all capitalised except some key words
+            re.compile(r"^(?!.*(?:МУЗЫКА|СМЕХ|КАШЕЛЬ|ПЕСНЯ|ПОЮТ|ПОЕТ|КРИК))[А-Я\s]{4,}$"),
+        ]
+    }
+
+
+def has_hall_text(s, language):
+    if language not in HALLUCINATION_TEXTS:
+        return False
+    for hall_text in HALLUCINATION_TEXTS[language]:
+        if hall_text.search(s) is not None:
+            logging.debug("Has hall_text: %s", s)
+            return True
+    return False

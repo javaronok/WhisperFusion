@@ -14,7 +14,7 @@ import torch
 import numpy as np
 import time
 from whisper_live.transcriber import WhisperModel
-
+from whisper_live.whisper_utils import has_hall_text
 
 class TranscriptionServer:
     """
@@ -356,14 +356,31 @@ class ServeClient:
                     input_sample,
                     initial_prompt=None,
                     language=self.language,
+                    temperature=[
+                        0.0,
+                        0.2,
+                        0.4,
+                        0.6,
+                        0.8,
+                        1.0,
+                    ],
                     task=self.task,
                     vad_filter=True,
                     vad_parameters={"threshold": 0.5}
                 )
 
-                if len(result):
+                s_len = len(result)
+                if s_len > 0:
+                    only_speech = [seg for seg in result if
+                                   seg.no_speech_prob < 0.6 and not has_hall_text(seg.text, self.language)]
+                    sp_len = len(only_speech)
+                    if sp_len < s_len:
+                        logging.info(f"[Whisper INFO]: filtered {s_len - sp_len} no speech segments")
+                    s_len = sp_len
+
+                if s_len > 0:
                     self.t_start = None
-                    self.last_segment = self.update_segments(result, duration)
+                    self.last_segment = self.update_segments(only_speech, duration)
                     if len(self.transcript) < self.send_last_n_segments:
                         segments = self.transcript
                     else:
@@ -384,6 +401,7 @@ class ServeClient:
                     if len(self.text) and self.text[-1] != '':
                         if time.time() - self.t_start > self.add_pause_thresh:
                             self.text.append('')
+                    self.last_segment = None
 
                 segments = []
                 if self.last_segment is not None and len(self.last_segment):
@@ -412,6 +430,7 @@ class ServeClient:
 
             except Exception as e:
                 logging.error(f"[ERROR]: {e}")
+                raise e
 
     def update_segments(self, segments, duration):
         """
