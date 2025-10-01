@@ -12,7 +12,7 @@ var recordingTime = 0;
 var server_state = 0;
 var websocket_audio = null;
 let audioContext_tts = null;
-var you_name = "Marcus"
+var you_name = "Proektarium"
 
 var audioContext = null;
 var audioWorkletNode = null;
@@ -142,8 +142,8 @@ function initWebSocket() {
       
       websocket.send(JSON.stringify({
         uid: generateUUID(),
-        multilingual: false,
-        language: "en",
+        multilingual: true,
+        language: "ru",
         task: "transcribe"
       }));
     }
@@ -164,15 +164,15 @@ function initWebSocket() {
             available_transcription_elements = available_transcription_elements + 1;
 
             var img_src = "0.png";
-            if (you_name.toLowerCase() == "marcus") {
-                you_name = "Marcus";
+            if (you_name.toLowerCase() == "Proektarium") {
+                you_name = "Proektarium";
                 img_src = "0.png";
-            } else if (you_name.toLowerCase() == "vineet") {
-                you_name = "Vineet";
-                img_src = "1.png";
-            } else if (you_name.toLowerCase() == "jakub") {
-                you_name = "Jakub";
-                img_src = "2.png";
+            } else if (you_name.toLowerCase() == "Proektarium") {
+                you_name = "Proektarium";
+                img_src = "0.png";
+            } else if (you_name.toLowerCase() == "Proektarium") {
+                you_name = "Proektarium";
+                img_src = "0.png";
             }
 
             new_transcription_element(you_name, img_src);

@@ -7,21 +7,20 @@ from tqdm import tqdm
 from websockets.sync.server import serve
 from whisperspeech.pipeline import Pipeline
 
+from kokoro import KPipeline
+import soundfile
+import numpy as np
+
+SAMPLE_RATE = 24000  # у Kokoro именно 24 кГц
 
 class WhisperSpeechTTS:
-    def __init__(self):
-        pass
-    
+
     def initialize_model(self):
-        self.pipe = Pipeline(s2a_ref='collabora/whisperspeech:s2a-q4-tiny-en+pl.model', torch_compile=False, device='cpu')
+        self.pipeline = KPipeline(lang_code='a')
         self.last_llm_response = None
 
     def run(self, host, port, audio_queue=None, should_send_server_ready=None):
-        # initialize and warmup model
         self.initialize_model()
-        # logging.info("\n[WhisperSpeech INFO:] Warming up torch compile model. Please wait ...\n")
-        for _ in tqdm(range(3), desc="Warming up"):
-           self.pipe.generate("Hello, I am warming up.")
         logging.info("[WhisperSpeech INFO:] Warmed up Whisper Speech torch compile model. Connect to the WebGUI now.")
         should_send_server_ready.value = True
 
@@ -58,18 +57,23 @@ class WhisperSpeechTTS:
             if self.last_llm_response != llm_output.strip():
                 try:
                     start = time.time()
-                    audio = self.pipe.generate(llm_output.strip())
+                    generator = self.pipeline(llm_output, voice="af_heart")
                     inference_time = time.time() - start
                     logging.info(f"[WhisperSpeech INFO:] TTS inference done in {inference_time} ms.\n\n")
-                    self.output_audio = audio.cpu().numpy()
+
+                    for result in generator:
+                        logging.debug(result.phonemes)
+                        if result.audio is None:
+                            continue
+                        output_audio = result.audio.cpu().numpy()
+
+                        if output_audio is not None:
+                            try:
+                                websocket.send(output_audio.tobytes())
+                            except Exception as e:
+                                logging.error(f"[WhisperSpeech ERROR:] Audio error: {e}")
+
                     self.last_llm_response = llm_output.strip()
                 except TimeoutError as te:
                     logging.error(f"[WhisperSpeech timeout ERROR:] error: {te}")
                     pass
-
-            if self.output_audio is not None:
-                try:
-                    websocket.send(self.output_audio.tobytes())
-                except Exception as e:
-                    logging.error(f"[WhisperSpeech ERROR:] Audio error: {e}")
-

@@ -9,9 +9,9 @@ import ctypes
 
 from multiprocessing import Process, Manager, Value, Queue
 
-from whisper_live.trt_server import TranscriptionServer
-from llm_service import TensorRTLLMEngine
-from tts_service import WhisperSpeechTTS
+from whisper_live.server import TranscriptionServer
+from mt_llm_service import TensorRTLLMEngine
+from kokoro_tts_service import WhisperSpeechTTS
 
 
 def parse_arguments():
@@ -87,9 +87,9 @@ if __name__ == "__main__":
             "0.0.0.0",
             6006,
             transcription_queue,
-            llm_queue,
-            args.whisper_tensorrt_path,
-            should_send_server_ready
+            #llm_queue,
+            #args.whisper_tensorrt_path,
+            #should_send_server_ready
         )
     )
     whisper_process.start()
