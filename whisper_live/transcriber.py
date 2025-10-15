@@ -1790,6 +1790,9 @@ class WhisperModel:
 
         return language, language_probability, all_language_probs
 
+    def destroy(self):
+        pass
+
 
 def restore_speech_timestamps(
     segments: Iterable[Segment],
