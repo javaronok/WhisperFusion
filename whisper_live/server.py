@@ -365,11 +365,13 @@ class ServeClient:
                         1.0,
                     ],
                     task=self.task,
+                    no_speech_threshold=0.2,
+                    language_detection_threshold=0.2,
                     vad_filter=True,
-                    vad_parameters={"threshold": 0.5}
+                    vad_parameters={"onset": 0.3}
                 )
 
-                s_len = len(result)
+                s_len = len(result) if result else 0
                 if s_len > 0:
                     only_speech = [seg for seg in result if
                                    seg.no_speech_prob < 0.6 and not has_hall_text(seg.text, self.language)]
