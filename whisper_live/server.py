@@ -8,10 +8,10 @@ import logging
 logging.basicConfig(level = logging.INFO)
 
 from websockets.sync.server import serve
-
+import numpy as np
 import functools
 import torch
-import numpy as np
+
 import time
 from whisper_live.transcriber import WhisperModel
 from whisper_live.whisper_utils import has_hall_text
@@ -32,6 +32,8 @@ class TranscriptionServer:
     """
 
     RATE = 16000
+
+    SINGLE_MODEL_LOCK = threading.Lock()
 
     def __init__(self):
         # voice activity detection model
@@ -208,15 +210,16 @@ class ServeClient:
         self.client_uid = client_uid
         self.data = b""
         self.frames = b""
-        self.language = language if multilingual else "en"
+        self.language = language if multilingual else "ru"
         self.task = task
         device = "cuda" if torch.cuda.is_available() else "cpu"
         self.transcriber = WhisperModel(
             #"small" if multilingual else "small.en",
-            "tiny",
+            "small",
             device=device,
             compute_type="int8" if device=="cpu" else "float16", 
             local_files_only=False,
+            cpu_threads=0
         )
         self.prompt = None
         self.last_prompt = None
@@ -351,6 +354,7 @@ class ServeClient:
             try:
                 input_sample = input_bytes.copy()
 
+                TranscriptionServer.SINGLE_MODEL_LOCK.acquire()
                 # whisper transcribe with prompt
                 result, info = self.transcriber.transcribe(
                     input_sample,
@@ -365,11 +369,11 @@ class ServeClient:
                         1.0,
                     ],
                     task=self.task,
-                    no_speech_threshold=0.2,
-                    language_detection_threshold=0.2,
-                    vad_filter=True,
-                    vad_parameters={"onset": 0.3}
+                    vad_filter=False,
+                    vad_parameters=None
+                    #vad_parameters={"onset": 0.3}
                 )
+                TranscriptionServer.SINGLE_MODEL_LOCK.release()
 
                 s_len = len(result) if result else 0
                 if s_len > 0:

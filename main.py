@@ -1,13 +1,8 @@
 import multiprocessing
 import argparse
-import threading
-import ssl
-import time
-import sys
-import functools
 import ctypes
 
-from multiprocessing import Process, Manager, Value, Queue
+from multiprocessing import Manager, Value, Queue
 
 from whisper_live.server import TranscriptionServer
 from mt_llm_service import TensorRTLLMEngine
@@ -116,6 +111,6 @@ if __name__ == "__main__":
     tts_process = multiprocessing.Process(target=tts_runner.run, args=("0.0.0.0", 8888, audio_queue, should_send_server_ready))
     tts_process.start()
 
-    llm_process.join()
     whisper_process.join()
+    llm_process.join()
     tts_process.join()

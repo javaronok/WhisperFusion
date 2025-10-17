@@ -3,13 +3,9 @@ import time
 import logging
 logging.basicConfig(level = logging.INFO)
 
-from tqdm import tqdm
 from websockets.sync.server import serve
-from whisperspeech.pipeline import Pipeline
 
 from kokoro import KPipeline
-import soundfile
-import numpy as np
 
 SAMPLE_RATE = 24000  # у Kokoro именно 24 кГц
 

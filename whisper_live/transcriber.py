@@ -5,6 +5,8 @@ import json
 import logging
 import os
 import zlib
+import time
+import traceback
 
 from dataclasses import asdict, dataclass
 from inspect import signature
@@ -12,9 +14,9 @@ from math import ceil
 from typing import BinaryIO, Iterable, List, Optional, Tuple, Union
 from warnings import warn
 
-import ctranslate2
 import numpy as np
 import tokenizers
+import ctranslate2
 
 from tqdm import tqdm
 
@@ -644,6 +646,12 @@ class WhisperModel:
             **model_kwargs,
         )
 
+        try:
+            self.check_encoder()
+        except Exception as exc:
+            traceback.print_exc()
+            raise exc
+
         tokenizer_file = os.path.join(model_path, "tokenizer.json")
         if tokenizer_bytes:
             self.hf_tokenizer = tokenizers.Tokenizer.from_buffer(tokenizer_bytes)
@@ -667,6 +675,17 @@ class WhisperModel:
         )
         self.time_precision = 0.02
         self.max_length = 448
+
+    def check_encoder(self):
+        self.logger.info("Encoder check ...")
+        f = np.random.randn(80, 3000).astype(np.float32)
+
+        if f.ndim == 2:
+            f = np.expand_dims(f, 0)
+        f = get_ctranslate2_storage(f)
+
+        out = self.model.encode(f, to_cpu=True)
+        self.logger.info("Encoder ok")
 
     @property
     def supported_languages(self) -> List[str]:
@@ -1347,7 +1366,15 @@ class WhisperModel:
             features = np.expand_dims(features, 0)
         features = get_ctranslate2_storage(features)
 
-        return self.model.encode(features, to_cpu=to_cpu)
+        self.logger.debug(f"Start encoding features: {features.shape}")
+        start_time = time.perf_counter()
+        try:
+            result = self.model.encode(features, to_cpu=to_cpu)
+            end_time = time.perf_counter()
+            self.logger.debug(f"Finish encoding features, elapsed: {end_time - start_time:.4f} sec")
+        except Exception as e:
+            self.logger.error(f"Encoding error: {e}")
+        return result
 
     def generate_with_fallback(
         self,
