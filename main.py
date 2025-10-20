@@ -1,8 +1,10 @@
+import sys
 import multiprocessing
 import argparse
 import ctypes
 
 from multiprocessing import Manager, Value, Queue
+from mac_compatible_queue import QueueSize
 
 from whisper_live.server import TranscriptionServer
 from mt_llm_service import TensorRTLLMEngine
@@ -70,9 +72,10 @@ if __name__ == "__main__":
     manager = Manager()
     shared_output = manager.list()
     should_send_server_ready = Value(ctypes.c_bool, False)
-    transcription_queue = Queue()
-    llm_queue = Queue()
-    audio_queue = Queue()
+
+    transcription_queue = Queue() if sys.platform != "darwin" else QueueSize(Queue())
+    llm_queue = Queue() if sys.platform != "darwin" else QueueSize(Queue())
+    audio_queue = Queue() if sys.platform != "darwin" else QueueSize(Queue())
 
 
     whisper_server = TranscriptionServer()

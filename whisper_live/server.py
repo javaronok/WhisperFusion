@@ -369,9 +369,8 @@ class ServeClient:
                         1.0,
                     ],
                     task=self.task,
-                    vad_filter=False,
-                    vad_parameters=None
-                    #vad_parameters={"onset": 0.3}
+                    vad_filter=True,
+                    vad_parameters={"onset": 0.3}
                 )
                 TranscriptionServer.SINGLE_MODEL_LOCK.release()
 
