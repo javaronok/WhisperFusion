@@ -81,6 +81,6 @@ setup(
         "sacremoses",
         "kokoro"
     ],
-    python_requires=">=3.11",
+    python_requires=">=3.10",
     cmdclass={"install": PostInstallCommand},
 )

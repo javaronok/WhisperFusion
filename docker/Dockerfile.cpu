@@ -1,0 +1,32 @@
+FROM python:3.10-bookworm AS base
+
+RUN apt-get update && apt-get install -y \
+    python3.10 python3-pip openmpi-bin libopenmpi-dev git wget \
+    xz-utils curl && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN apt update && apt install ffmpeg portaudio19-dev -y
+
+FROM base AS devel
+RUN pip install --no-cache-dir -U "pip>=24"
+
+RUN mkdir /app
+WORKDIR /app/
+
+RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
+
+COPY setup.py /app
+COPY README.md /app
+
+RUN pip install /app
+
+FROM devel AS release
+
+COPY kokoro_tts_service.py /app
+COPY main.py /app
+COPY mt_llm_service.py /app
+COPY tts_service.py /app
+
+COPY whisper_live /app/whisper_live
+
+CMD ["python", "/app/main.py"]

@@ -1,0 +1,22 @@
+services:
+  whisper-fusion:
+    image: whisper-fusion-voice-translate-chat-service:0.1-cpu
+    volumes:
+      - ${HF_HUB_PATH}:/root/.cache/huggingface/
+    environment:
+      VERBOSE: ${VERBOSE:-false}
+    ports:
+      - "8888:8888"
+      - "6006:6006"
+
+  ws-client-nginx:
+    image: nginx:1.14.2
+    volumes:
+      - ${ROOT_PATH}/docker/resources/docker/default:/etc/nginx/conf.d/default.conf:ro
+      - ${ROOT_PATH}/examples/chatbot/html:/var/www/html:ro
+    ports:
+      - "8000:80"
+    depends_on:
+      - whisper-fusion
+    extra_hosts:
+      - "whisper-fusion:${HOST_IP}"
