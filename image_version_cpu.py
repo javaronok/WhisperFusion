@@ -1,1 +1,1 @@
-VERSION="0.1-cpu"
+VERSION="0.2-cpu"

@@ -1,6 +1,6 @@
 services:
   whisper-fusion:
-    image: whisper-fusion-voice-translate-chat-service:0.1-cpu
+    image: whisper-fusion-voice-translate-chat-service:0.2-cpu
     volumes:
       - ${HF_HUB_PATH}:/root/.cache/huggingface/
     environment:
