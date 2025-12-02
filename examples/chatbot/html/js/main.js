@@ -107,6 +107,30 @@ function stopRecording() {
     clearInterval(intervalFunction);
 }
 
+function base64ToInt32Array(b64) {
+  const raw = atob(b64);
+  const bytes = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) {
+    bytes[i] = raw.charCodeAt(i);
+  }
+  return new Float32Array(bytes.buffer);
+}
+
+function handleJSONMessage({ audio }) {
+  let float32Array = base64ToInt32Array(audio);
+  let audioBuffer = audioContext_tts.createBuffer(1, float32Array.length, 24000);
+  audioBuffer.getChannelData(0).set(float32Array);
+
+  new_whisper_speech_audio_element("audio-" + available_audio_elements, Math.floor(audioBuffer.duration));
+
+  audio_sources.push(audioBuffer);
+
+  audio_source = audioContext_tts.createBufferSource();
+  audio_source.buffer = audioBuffer;
+  audio_source.connect(audioContext_tts.destination);
+  audio_source.start();
+}
+
 function initWebSocket() {
     websocket_audio = new WebSocket(websocket_audio_uri);
     websocket_audio.binaryType = "arraybuffer";
@@ -115,20 +139,13 @@ function initWebSocket() {
     websocket_audio.onclose = function(e) { }
     websocket_audio.onmessage = function(e) {
         available_audio_elements++;
-        
-        let float32Array = new Float32Array(e.data);
-        let audioBuffer = audioContext_tts.createBuffer(1, float32Array.length, 24000);
-        audioBuffer.getChannelData(0).set(float32Array);
 
-        new_whisper_speech_audio_element("audio-" + available_audio_elements, Math.floor(audioBuffer.duration));
-
-        audio_sources.push(audioBuffer);
-
-        audio_source = audioContext_tts.createBufferSource();
-        audio_source.buffer = audioBuffer;
-        audio_source.connect(audioContext_tts.destination);
-        audio_source.start();
-
+        try {
+          const msg = JSON.parse(e.data);
+          handleJSONMessage(msg);
+        } catch (e) {
+          console.error("Error parsing message:", e);
+        }
         window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     }
 

@@ -1,4 +1,6 @@
 import time
+import json
+import base64
 import logging
 logging.basicConfig(level=logging.INFO)
 
@@ -104,14 +106,22 @@ class WhisperSpeechTTS:
                         if output_audio is not None:
                             audio_bytes = output_audio.tobytes()
 
-                            # РАССЫЛКА ВСЕМ КЛИЕНТАМ
+                            audio_base64 = base64.b64encode(audio_bytes).decode('utf-8')
+
+                            message = {
+                                "type": "tts",
+                                "content": llm_output,
+                                "audio": audio_base64
+                            }
+
+                            # рассылка всем подключённым клиентам
                             with self.lock:
                                 # Копируем список, чтобы не сломать итерацию при удалении клиента
                                 active_clients = list(self.connected_clients)
 
                             for client in active_clients:
                                 try:
-                                    client.send(audio_bytes)
+                                    client.send(json.dumps(message))
                                 except Exception as e:
                                     logging.error(f"[WhisperSpeech ERROR:] Send error: {e}")
                                     # Удаление клиента произойдет в handle_client_connection автоматически при разрыве
