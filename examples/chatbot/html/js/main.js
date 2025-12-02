@@ -141,11 +141,11 @@ function initWebSocket() {
         available_audio_elements++;
 
         try {
+          const msg = JSON.parse(e.data);
           if ("content" in msg) {
             new_transcription_element("Proektarium", "0.png");
             new_text_element("<p>" + msg["content"] + "</p>", "mt-" + available_transcription_elements);
           }
-          const msg = JSON.parse(e.data);
           handleJSONMessage(msg);
         } catch (e) {
           console.error("Error parsing message:", e);
